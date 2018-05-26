@@ -16,10 +16,9 @@ type CPU struct {
 	PC    uint16    // program counter
 	SP    uint16    // stack pointer
 	Stack [16]uint16
-	Key   [16]uint8
 }
 
-func (cpu *CPU) Reset() {
+func (cpu *CPU) reset() {
 	cpu.PC = StartAddress
 	cpu.I = 0
 	cpu.SP = 0
@@ -32,10 +31,6 @@ func (cpu *CPU) Reset() {
 	// clear register V0-VF
 	for i := 0; i < len(cpu.V); i++ {
 		cpu.V[i] = 0
-	}
-
-	for i := 0; i < len(cpu.Key); i++ {
-		cpu.Key[i] = 0
 	}
 }
 
@@ -143,9 +138,9 @@ func (cpu *CPU) singleStep(mem *Memory, gfx *Graphics, sys *System) {
 		x := uint8((opc & 0x0F00) >> 8)
 		switch opc & 0x00FF {
 		case 0x009E: // EX9E: Skips the next instruction if the key stored in VX is pressed
-			newPC = cpu.skipIfKeyPressed(x)
+			newPC = cpu.skipIfKeyPressed(sys, x)
 		case 0x00A1: // EXA1: Skips the next instruction if the key stored in VX isn't pressed
-			newPC = cpu.skipIfKeyNotPressed(x)
+			newPC = cpu.skipIfKeyNotPressed(sys, x)
 		default:
 			cpu.unknownOp(opc)
 		}
@@ -154,16 +149,16 @@ func (cpu *CPU) singleStep(mem *Memory, gfx *Graphics, sys *System) {
 		x := uint8((opc & 0x0F00) >> 8)
 		switch opc & 0x00FF {
 		case 0x0007: // FX07: Sets VX to the value of the delay timer
-			cpu.getDelayTimer(x, sys)
+			cpu.getDelayTimer(sys, x)
 
 		case 0x000A: // FX0A: A key press is awaited, and then stored in VX
-			newPC = cpu.awaitKey(x)
+			newPC = cpu.awaitKey(sys, x)
 
 		case 0x0015: // FX15: Sets the delay timer to VX
-			cpu.setDelayTimer(x, sys)
+			cpu.setDelayTimer(sys, x)
 
 		case 0x0018: // FX18: Sets the sound timer to VX
-			cpu.setSoundTimer(x, sys)
+			cpu.setSoundTimer(sys, x)
 
 		case 0x001E: // FX1E: Adds VX to I
 			cpu.addI(x)
@@ -196,14 +191,12 @@ func (cpu *CPU) jump(addr uint16) uint16 {
 }
 
 func (cpu *CPU) call(addr uint16) uint16 {
-	fmt.Println("call", addr)
 	cpu.Stack[cpu.SP] = cpu.PC
 	cpu.SP++
 	return addr
 }
 
 func (cpu *CPU) ret() uint16 {
-	fmt.Println("ret")
 	cpu.SP--
 	return cpu.Stack[cpu.SP]
 }
@@ -333,15 +326,15 @@ func (cpu *CPU) drawSprite(mem *Memory, gfx *Graphics, x, y, h uint8) {
 	}
 }
 
-func (cpu *CPU) skipIfKeyPressed(x uint8) uint16 {
-	if cpu.Key[cpu.V[x]] != 0 {
+func (cpu *CPU) skipIfKeyPressed(sys *System, x uint8) uint16 {
+	if sys.keys[cpu.V[x]] != 0 {
 		return cpu.PC + 4
 	}
 	return cpu.PC + 2
 }
 
-func (cpu *CPU) skipIfKeyNotPressed(x uint8) uint16 {
-	if cpu.Key[cpu.V[x]] == 0 {
+func (cpu *CPU) skipIfKeyNotPressed(sys *System, x uint8) uint16 {
+	if sys.keys[cpu.V[x]] == 0 {
 		return cpu.PC + 4
 	}
 	return cpu.PC + 2
@@ -352,13 +345,13 @@ func (cpu *CPU) unknownOp(opc uint16) {
 	cpu.PC += 2
 }
 
-func (cpu *CPU) getDelayTimer(x uint8, sys *System) {
+func (cpu *CPU) getDelayTimer(sys *System, x uint8) {
 	cpu.V[x] = sys.delayTimer
 }
 
-func (cpu *CPU) awaitKey(x uint8) uint16 {
+func (cpu *CPU) awaitKey(sys *System, x uint8) uint16 {
 	fmt.Println("awaitKey")
-	for i, key := range cpu.Key {
+	for i, key := range sys.keys {
 		if key != 0 {
 			cpu.V[x] = uint8(i)
 			return cpu.PC + 2
@@ -367,11 +360,11 @@ func (cpu *CPU) awaitKey(x uint8) uint16 {
 	return cpu.PC // try again in next cycle
 }
 
-func (cpu *CPU) setDelayTimer(x uint8, sys *System) {
+func (cpu *CPU) setDelayTimer(sys *System, x uint8) {
 	sys.delayTimer = cpu.V[x]
 }
 
-func (cpu *CPU) setSoundTimer(x uint8, sys *System) {
+func (cpu *CPU) setSoundTimer(sys *System, x uint8) {
 	sys.soundTimer = cpu.V[x]
 }
 

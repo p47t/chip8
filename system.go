@@ -10,14 +10,23 @@ type System struct {
 	mem Memory
 	gfx Graphics
 
+	keys [16]uint8
+
 	delayTimer uint8
 	soundTimer uint8
 }
 
 func (sys *System) Initialize() {
-	sys.cpu.Reset()
-	sys.mem.Clear()
+	sys.cpu.reset()
+	sys.mem.clear()
 	sys.gfx.clear()
+
+	for i := 0; i < len(sys.keys); i++ {
+		sys.keys[i] = 0
+	}
+
+	sys.delayTimer = 0
+	sys.soundTimer = 0
 }
 
 func (sys *System) Cycle() {

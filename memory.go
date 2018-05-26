@@ -4,7 +4,7 @@ import "fmt"
 
 type Memory [4096]uint8
 
-func (mem *Memory) Clear() {
+func (mem *Memory) clear() {
 	// clear memory
 	for i := 0; i < len(mem); i++ {
 		mem[i] = 0
