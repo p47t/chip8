@@ -12,5 +12,6 @@ func main() {
 
 	for {
 		sys.Cycle()
+		sys.Print()
 	}
 }

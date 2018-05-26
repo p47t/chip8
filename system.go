@@ -3,6 +3,8 @@ package chip8
 import (
 	"fmt"
 	"io/ioutil"
+	tm "github.com/buger/goterm"
+	"time"
 )
 
 type System struct {
@@ -27,6 +29,16 @@ func (sys *System) Initialize() {
 
 	sys.delayTimer = 0
 	sys.soundTimer = 0
+}
+
+func (sys *System) Print() {
+	tm.Clear()
+	tm.MoveCursor(1,1)
+
+	sys.cpu.Print(tm.Screen)
+
+	tm.Flush()
+	time.Sleep(10 * time.Millisecond)
 }
 
 func (sys *System) Cycle() {

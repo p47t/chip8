@@ -3,6 +3,7 @@ package chip8
 import (
 	"fmt"
 	"math/rand"
+	"io"
 )
 
 const (
@@ -16,12 +17,25 @@ type CPU struct {
 	PC    uint16    // program counter
 	SP    uint16    // stack pointer
 	Stack [16]uint16
+
+	cycles int64
+}
+
+func (cpu *CPU) Print(w io.Writer) {
+	fmt.Fprintf(w, "Cycles %d\n\n", cpu.cycles)
+	fmt.Fprintf(w, "PC = 0x%x\n", cpu.PC)
+	fmt.Fprintf(w, "SP = 0x%x\n", cpu.SP)
+	fmt.Fprintf(w, " I = 0x%x\n", cpu.I)
+	for i := 0; i < len(cpu.V); i++ {
+		fmt.Fprintf(w, "V%X = 0x%x\n", i, cpu.V[i])
+	}
 }
 
 func (cpu *CPU) reset() {
 	cpu.PC = StartAddress
 	cpu.I = 0
 	cpu.SP = 0
+	cpu.cycles = 0
 
 	// clear stack
 	for i := 0; i < len(cpu.Stack); i++ {
@@ -36,6 +50,7 @@ func (cpu *CPU) reset() {
 
 func (cpu *CPU) Cycle(mem *Memory, gfx *Graphics, sys *System) {
 	cpu.singleStep(mem, gfx, sys)
+	cpu.cycles++
 }
 
 // decode and singleStep opcode
