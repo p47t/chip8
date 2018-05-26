@@ -2,7 +2,11 @@ package chip8
 
 import "fmt"
 
-type Memory [4096]uint8
+const (
+	MemorySize = 4096
+)
+
+type Memory [MemorySize]uint8
 
 func (mem *Memory) clear() {
 	// clear memory
@@ -22,11 +26,11 @@ func (mem *Memory) fetchOpcode(addr uint16) uint16 {
 
 func (mem *Memory) loadROM(bytes []byte) error {
 	l := len(bytes)
-	if l > 4096 - 512 {
+	if l > MemorySize - StartAddress {
 		return fmt.Errorf("ROM too big for memory: %d", l)
 	}
 	for i := 0; i < l; i++ {
-		mem[512 + i] = bytes[i]
+		mem[StartAddress + i] = bytes[i]
 	}
 	return nil
 }
