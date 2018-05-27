@@ -56,7 +56,7 @@ func (emu *Emulator) Initialize(romFile string) {
 	gl.LoadIdentity()
 	gl.Ortho(0, DisplayWidth, DisplayHeight, 0, -1.0, 1.0)
 	gl.MatrixMode(gl.MODELVIEW)
-	gl.Viewport(0, 0, DisplayWidth, DisplayHeight)
+	gl.Viewport(0, 0, DisplayWidth*2, DisplayHeight*2)
 
 	emu.screenData = make([]byte, ScreenWidth*ScreenHeight*3)
 	for i := 0; i < len(emu.screenData); i++ {
