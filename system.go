@@ -3,8 +3,8 @@ package chip8
 import (
 	"fmt"
 	"io/ioutil"
+
 	tm "github.com/buger/goterm"
-	"time"
 )
 
 type System struct {
@@ -38,7 +38,6 @@ func (sys *System) Print() {
 	sys.cpu.Print(tm.Screen)
 
 	tm.Flush()
-	time.Sleep(10 * time.Millisecond)
 }
 
 func (sys *System) Cycle() {
@@ -69,4 +68,8 @@ func (sys *System) Load(filename string) error {
 		return err
 	}
 	return sys.mem.loadROM(bytes)
+}
+
+func (sys *System) GetPixel(x, y uint8) uint8 {
+	return sys.gfx.getPixel(x, y)
 }
