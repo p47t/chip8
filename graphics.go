@@ -14,10 +14,15 @@ func (g *Graphics) isDirty() bool {
 	return g.dirty
 }
 
+func (g *Graphics) setDirty(dirty bool) {
+	g.dirty = dirty
+}
+
 func (g *Graphics) clear() {
 	for i := 0; i < len(g.buffer); i++ {
 		g.buffer[i] = 0
 	}
+	g.dirty = true
 }
 
 func (g *Graphics) getPixel(x, y uint8) uint8 {

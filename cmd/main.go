@@ -114,11 +114,14 @@ func (emu *Emulator) UpdateTexture() {
 func (emu *Emulator) Loop() {
 	for !emu.window.ShouldClose() {
 		emu.sys.Cycle()
-		//emu.sys.Print()
+		emu.sys.Print()
 
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		emu.UpdateTexture()
-		emu.window.SwapBuffers()
+		if emu.sys.IsDirty() {
+			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+			emu.UpdateTexture()
+			emu.window.SwapBuffers()
+			emu.sys.SetDirty(false)
+		}
 		glfw.PollEvents()
 	}
 }

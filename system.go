@@ -73,3 +73,11 @@ func (sys *System) Load(filename string) error {
 func (sys *System) GetPixel(x, y uint8) uint8 {
 	return sys.gfx.getPixel(x, y)
 }
+
+func (sys *System) IsDirty() bool {
+	return sys.gfx.isDirty()
+}
+
+func (sys *System) SetDirty(dirty bool) {
+	sys.gfx.setDirty(dirty)
+}
