@@ -1,7 +1,12 @@
 package chip8
 
+const(
+	GfxWidth = 64
+	GfxHeight = 32
+)
+
 type Graphics struct {
-	buffer [64 * 32]uint8
+	buffer [GfxWidth * GfxHeight]uint8
 	dirty bool
 }
 
@@ -16,11 +21,11 @@ func (g *Graphics) clear() {
 }
 
 func (g *Graphics) getPixel(x, y uint8) uint8 {
-	return g.buffer[x + y * 64]
+	return g.buffer[uint(x) + uint(y) * 64]
 }
 
 func (g *Graphics) flip(x, y uint8) {
-	g.buffer[x + y * 64] ^= 1
+	g.buffer[uint(x) + uint(y) * 64] ^= 1
 }
 
 func (g *Graphics) draw(mem *Memory, I uint16, x, y, h uint8) bool {
