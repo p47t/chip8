@@ -81,3 +81,11 @@ func (sys *System) IsDirty() bool {
 func (sys *System) SetDirty(dirty bool) {
 	sys.gfx.setDirty(dirty)
 }
+
+func (sys *System) OnKeyDown(key int) {
+	sys.keys[key] = 1
+}
+
+func (sys *System) OnKeyUp(key int) {
+	sys.keys[key] = 0
+}

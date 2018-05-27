@@ -47,6 +47,81 @@ func (emu *Emulator) Initialize(romFile string) {
 	}
 	emu.window.MakeContextCurrent()
 
+	emu.window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		switch action {
+		case glfw.Press:
+			switch key {
+			case glfw.Key1:
+				emu.sys.OnKeyDown(0x1)
+			case glfw.Key2:
+				emu.sys.OnKeyDown(0x2)
+			case glfw.Key3:
+				emu.sys.OnKeyDown(0x3)
+			case glfw.Key4:
+				emu.sys.OnKeyDown(0xC)
+			case glfw.KeyQ:
+				emu.sys.OnKeyDown(0x4)
+			case glfw.KeyW:
+				emu.sys.OnKeyDown(0x5)
+			case glfw.KeyE:
+				emu.sys.OnKeyDown(0x6)
+			case glfw.KeyR:
+				emu.sys.OnKeyDown(0xD)
+			case glfw.KeyA:
+				emu.sys.OnKeyDown(0x7)
+			case glfw.KeyS:
+				emu.sys.OnKeyDown(0x8)
+			case glfw.KeyD:
+				emu.sys.OnKeyDown(0x9)
+			case glfw.KeyF:
+				emu.sys.OnKeyDown(0xE)
+			case glfw.KeyZ:
+				emu.sys.OnKeyDown(0xA)
+			case glfw.KeyX:
+				emu.sys.OnKeyDown(0x0)
+			case glfw.KeyC:
+				emu.sys.OnKeyDown(0xB)
+			case glfw.KeyY:
+				emu.sys.OnKeyDown(0xF)
+			}
+		case glfw.Release:
+			switch key {
+			case glfw.Key1:
+				emu.sys.OnKeyUp(0x1)
+			case glfw.Key2:
+				emu.sys.OnKeyUp(0x2)
+			case glfw.Key3:
+				emu.sys.OnKeyUp(0x3)
+			case glfw.Key4:
+				emu.sys.OnKeyUp(0xC)
+			case glfw.KeyQ:
+				emu.sys.OnKeyUp(0x4)
+			case glfw.KeyW:
+				emu.sys.OnKeyUp(0x5)
+			case glfw.KeyE:
+				emu.sys.OnKeyUp(0x6)
+			case glfw.KeyR:
+				emu.sys.OnKeyUp(0xD)
+			case glfw.KeyA:
+				emu.sys.OnKeyUp(0x7)
+			case glfw.KeyS:
+				emu.sys.OnKeyUp(0x8)
+			case glfw.KeyD:
+				emu.sys.OnKeyUp(0x9)
+			case glfw.KeyF:
+				emu.sys.OnKeyUp(0xE)
+			case glfw.KeyZ:
+				emu.sys.OnKeyUp(0xA)
+			case glfw.KeyX:
+				emu.sys.OnKeyUp(0x0)
+			case glfw.KeyC:
+				emu.sys.OnKeyUp(0xB)
+			case glfw.KeyY:
+				emu.sys.OnKeyUp(0xF)
+			}
+		}
+	})
+
 	// Initialize Glow
 	if err := gl.Init(); err != nil {
 		panic(err)
@@ -101,7 +176,7 @@ func (emu *Emulator) UpdateTexture() {
 
 	gl.Begin(gl.QUADS)
 	gl.TexCoord2d(0.0, 0.0)
-	gl.Vertex2d(0.0,0.0)
+	gl.Vertex2d(0.0, 0.0)
 	gl.TexCoord2d(1.0, 0.0)
 	gl.Vertex2d(DisplayWidth, 0.0)
 	gl.TexCoord2d(1.0, 1.0)
