@@ -49,12 +49,12 @@ func (cpu *CPU) reset() {
 }
 
 func (cpu *CPU) Cycle(mem *Memory, gfx *Graphics, sys *System) {
-	cpu.singleStep(mem, gfx, sys)
+	cpu.step(mem, gfx, sys)
 	cpu.cycles++
 }
 
-// decode and singleStep opcode
-func (cpu *CPU) singleStep(mem *Memory, gfx *Graphics, sys *System) {
+// decode and step opcode
+func (cpu *CPU) step(mem *Memory, gfx *Graphics, sys *System) {
 	opc := mem.fetchOpcode(cpu.PC)
 	newPC := cpu.PC + 2
 
