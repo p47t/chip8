@@ -334,7 +334,7 @@ func (cpu *CPU) drawSprite(mem *Memory, gfx *Graphics, x, y, h uint8) {
 	// I value doesn't change after the execution of this instruction.
 	// VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn,
 	// and to 0 if that doesn't happen
-	if hit := gfx.draw(mem, cpu.I, x, y, h); hit {
+	if hit := gfx.draw(mem, cpu.I, cpu.V[x], cpu.V[y], h); hit {
 		cpu.setCarry(1)
 	} else {
 		cpu.setCarry(0)
