@@ -206,7 +206,7 @@ func (cpu *CPU) jump(addr uint16) uint16 {
 }
 
 func (cpu *CPU) call(addr uint16) uint16 {
-	cpu.Stack[cpu.SP] = cpu.PC
+	cpu.Stack[cpu.SP] = cpu.PC + 2
 	cpu.SP++
 	return addr
 }
@@ -407,12 +407,10 @@ func (cpu *CPU) storeToI(mem *Memory, x uint8) {
 	for i := uint8(0); i <= x; i++ {
 		mem[cpu.I+uint16(i)] = cpu.V[i]
 	}
-	cpu.I += uint16(x) + 1
 }
 
 func (cpu *CPU) fetchFromI(mem *Memory, x uint8) {
 	for i := uint8(0); i <= x; i++ {
 		cpu.V[i] = mem[cpu.I+uint16(i)]
 	}
-	cpu.I += uint16(x) + 1
 }
