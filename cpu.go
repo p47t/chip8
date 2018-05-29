@@ -22,12 +22,11 @@ type CPU struct {
 }
 
 func (cpu *CPU) Print(w io.Writer) {
-	fmt.Fprintf(w, "Cycles %d\n\n", cpu.cycles)
-	fmt.Fprintf(w, "PC = 0x%x\n", cpu.PC)
-	fmt.Fprintf(w, "SP = 0x%x\n", cpu.SP)
-	fmt.Fprintf(w, " I = 0x%x\n", cpu.I)
-	for i := 0; i < len(cpu.V); i++ {
-		fmt.Fprintf(w, "V%X = 0x%x\n", i, cpu.V[i])
+	fmt.Fprintf(w, "Cycles #%d\n", cpu.cycles)
+	fmt.Fprintf(w, "PC = 0x%04x, SP = %d, I = 0x%04x\n", cpu.PC, cpu.SP, cpu.I)
+	for i := 0; i < len(cpu.V); i += 4 {
+		fmt.Fprintf(w, "V%X = 0x%02x, V%X = 0x%02x, V%X = 0x%02x, V%X = 0x%02x\n",
+			i, cpu.V[i], i+1, cpu.V[i+1], i+2, cpu.V[i+2], i+3, cpu.V[i+3])
 	}
 }
 
