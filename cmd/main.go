@@ -187,9 +187,11 @@ func (emu *Emulator) UpdateTexture() {
 }
 
 func (emu *Emulator) Loop() {
+	emu.sys.Print(true)
+
 	for !emu.window.ShouldClose() {
 		emu.sys.Cycle()
-		emu.sys.Print()
+		emu.sys.Print(true)
 
 		if emu.sys.IsDirty() {
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)

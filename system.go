@@ -31,7 +31,12 @@ func (sys *System) Initialize() {
 	sys.soundTimer = 0
 }
 
-func (sys *System) Print() {
+func (sys *System) Print(dump bool) {
+	if dump {
+		sys.cpu.Print(os.Stdout)
+		return
+	}
+
 	tm.Clear()
 	tm.MoveCursor(1,1)
 

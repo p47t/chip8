@@ -2,8 +2,8 @@ package chip8
 
 import (
 	"fmt"
-	"math/rand"
 	"io"
+	"math/rand"
 )
 
 const (
