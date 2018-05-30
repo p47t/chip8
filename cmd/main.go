@@ -200,6 +200,8 @@ func (emu *Emulator) Loop() {
 			emu.sys.SetDirty(false)
 		}
 		glfw.PollEvents()
+
+		time.Sleep(1 * time.Millisecond)
 	}
 }
 
