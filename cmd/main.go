@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"runtime"
+	"time"
 	"unsafe"
 
-	"github.com/go-gl/gl/v2.1/gl"
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/p47r1ck7541/chip8"
 )
@@ -27,9 +29,38 @@ const (
 type Emulator struct {
 	sys chip8.System
 
-	screenData []byte
-	window     *glfw.Window
+	screenData            []byte
+	window                *glfw.Window
+	fullScreenTriangleVAO uint32
+	bufferTexture         uint32
+	shaderProgram         uint32
 }
+
+const vertexShader = `
+#version 330
+
+noperspective out vec2 TexCoord;
+
+void main(void) {
+    TexCoord.x = (gl_VertexID == 2)? 2.0: 0.0;
+    TexCoord.y = (gl_VertexID == 1)? 2.0: 0.0;
+
+	gl_Position = vec4(2.0 * TexCoord - 1.0, 0.0, 1.0);
+}
+`
+
+const fragmentShader = `
+#version 330
+
+uniform sampler2D buffer;
+noperspective in vec2 TexCoord;
+
+out vec3 outColor;
+
+void main(void) {
+	outColor = texture(buffer, TexCoord).rgb;
+}
+`
 
 func (emu *Emulator) Initialize(romFile string) {
 	var err error
@@ -39,8 +70,10 @@ func (emu *Emulator) Initialize(romFile string) {
 
 	// Create window
 	glfw.WindowHint(glfw.Resizable, glfw.False)
-	glfw.WindowHint(glfw.ContextVersionMajor, 2)
-	glfw.WindowHint(glfw.ContextVersionMinor, 1)
+	glfw.WindowHint(glfw.ContextVersionMajor, 3)
+	glfw.WindowHint(glfw.ContextVersionMinor, 3)
+	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	emu.window, err = glfw.CreateWindow(DisplayWidth, DisplayHeight, "Chip8", nil, nil)
 	if err != nil {
 		panic(err)
@@ -126,35 +159,74 @@ func (emu *Emulator) Initialize(romFile string) {
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
-	gl.ClearColor(0.0, 0.5, 0.0, 0.0)
-	gl.MatrixMode(gl.PROJECTION)
-	gl.LoadIdentity()
-	gl.Ortho(0, DisplayWidth, DisplayHeight, 0, -1.0, 1.0)
-	gl.MatrixMode(gl.MODELVIEW)
-	gl.Viewport(0, 0, DisplayWidth*2, DisplayHeight*2)
+	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
+
+	gl.GenVertexArrays(1, &emu.fullScreenTriangleVAO)
+	gl.BindVertexArray(emu.fullScreenTriangleVAO)
+
+	var status int32
+
+	emu.shaderProgram = gl.CreateProgram()
+
+	vs := gl.CreateShader(gl.VERTEX_SHADER)
+	defer gl.DeleteShader(vs)
+	vsCode, vsCodeFree := gl.Strs(vertexShader)
+	defer vsCodeFree()
+	gl.ShaderSource(vs, 1, vsCode, nil)
+	gl.CompileShader(vs)
+	gl.GetShaderiv(vs, gl.COMPILE_STATUS, &status)
+	if status == gl.FALSE {
+		panic(fmt.Errorf("failed to compile vertex shader"))
+	}
+	gl.AttachShader(emu.shaderProgram, vs)
+	defer gl.DetachShader(emu.shaderProgram, vs)
+
+	fs := gl.CreateShader(gl.FRAGMENT_SHADER)
+	defer gl.DeleteShader(fs)
+	fsCode, fsCodeFree := gl.Strs(fragmentShader)
+	defer fsCodeFree()
+	gl.ShaderSource(fs, 1, fsCode, nil)
+	gl.CompileShader(fs)
+	gl.GetShaderiv(fs, gl.COMPILE_STATUS, &status)
+	if status == gl.FALSE {
+		panic(fmt.Errorf("failed to compile fragment shader"))
+	}
+	gl.AttachShader(emu.shaderProgram, fs)
+	defer gl.DetachShader(emu.shaderProgram, fs)
+
+	gl.LinkProgram(emu.shaderProgram)
+	gl.GetProgramiv(emu.shaderProgram, gl.LINK_STATUS, &status)
+	if status == gl.FALSE {
+		panic(fmt.Errorf("failed to link shaderProgram"))
+	}
 
 	emu.screenData = make([]byte, ScreenWidth*ScreenHeight*3)
 	for i := 0; i < len(emu.screenData); i++ {
 		emu.screenData[i] = 0x80
 	}
-	emu.SetupTexture()
 
-	// Initialize system
-	emu.sys.Initialize()
-	emu.sys.Load(romFile)
-}
+	gl.GenTextures(1, &emu.bufferTexture)
+	gl.BindTexture(gl.TEXTURE_2D, emu.bufferTexture)
 
-func (emu *Emulator) SetupTexture() {
 	gl.TexImage2D(
-		gl.TEXTURE_2D, 0, gl.RGB, ScreenWidth, ScreenHeight, 0,
+		gl.TEXTURE_2D, 0, gl.RGB,
+		ScreenWidth, ScreenHeight, 0,
 		gl.RGB, gl.UNSIGNED_BYTE, unsafe.Pointer(&emu.screenData[0]))
 
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
-	gl.Enable(gl.TEXTURE_2D)
+	bufferLoc := gl.GetUniformLocation(emu.shaderProgram, gl.Str("buffer"+"\x00"))
+	gl.Uniform1i(bufferLoc, 0)
+
+	gl.Disable(gl.DEPTH_TEST)
+	gl.UseProgram(emu.shaderProgram)
+
+	// Initialize system
+	emu.sys.Initialize()
+	emu.sys.Load(romFile)
 }
 
 func (emu *Emulator) UpdateTexture() {
@@ -174,16 +246,8 @@ func (emu *Emulator) UpdateTexture() {
 		ScreenWidth, ScreenHeight, gl.RGB, gl.UNSIGNED_BYTE,
 		unsafe.Pointer(&emu.screenData[0]))
 
-	gl.Begin(gl.QUADS)
-	gl.TexCoord2d(0.0, 0.0)
-	gl.Vertex2d(0.0, 0.0)
-	gl.TexCoord2d(1.0, 0.0)
-	gl.Vertex2d(DisplayWidth, 0.0)
-	gl.TexCoord2d(1.0, 1.0)
-	gl.Vertex2d(DisplayWidth, DisplayHeight)
-	gl.TexCoord2d(0.0, 1.0)
-	gl.Vertex2d(0.0, DisplayHeight)
-	gl.End()
+	gl.BindVertexArray(emu.fullScreenTriangleVAO)
+	gl.DrawArrays(gl.TRIANGLES, 0, 3)
 }
 
 func (emu *Emulator) Loop() {
@@ -206,6 +270,9 @@ func (emu *Emulator) Loop() {
 }
 
 func (emu *Emulator) Terminate() {
+	gl.DeleteVertexArrays(1, &emu.fullScreenTriangleVAO)
+	gl.DeleteTextures(1, &emu.bufferTexture)
+	gl.DeleteProgram(emu.shaderProgram)
 	glfw.Terminate()
 }
 
