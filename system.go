@@ -3,6 +3,8 @@ package chip8
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
+	"time"
 
 	tm "github.com/buger/goterm"
 )
@@ -16,6 +18,8 @@ type System struct {
 
 	delayTimer uint8
 	soundTimer uint8
+
+	quit chan struct{}
 }
 
 func (sys *System) Initialize() {
@@ -29,6 +33,21 @@ func (sys *System) Initialize() {
 
 	sys.delayTimer = 0
 	sys.soundTimer = 0
+
+	go func() {
+		for {
+			select {
+			case <-sys.quit:
+				return
+			case <-time.After(1000 / 60 * time.Millisecond):
+				sys.updateTimer()
+			}
+		}
+	}()
+}
+
+func (sys *System) Terminate() {
+	sys.quit <- struct{}{}
 }
 
 func (sys *System) Print(dump bool) {
@@ -38,17 +57,13 @@ func (sys *System) Print(dump bool) {
 	}
 
 	tm.Clear()
-	tm.MoveCursor(1,1)
-
+	tm.MoveCursor(1, 1)
 	sys.cpu.Print(tm.Screen)
-
 	tm.Flush()
 }
 
 func (sys *System) Cycle() {
 	sys.cpu.Cycle(&sys.mem, &sys.gfx, sys)
-
-	sys.updateTimer()
 }
 
 func (sys *System) updateTimer() {
