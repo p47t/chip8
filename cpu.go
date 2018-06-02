@@ -364,7 +364,6 @@ func (cpu *CPU) ldVxDT(sys *System, x uint8) {
 }
 
 func (cpu *CPU) ldVxK(sys *System, x uint8) uint16 {
-	fmt.Println("ldVxK")
 	for i, key := range sys.keys {
 		if key != 0 {
 			cpu.V[x] = uint8(i)
