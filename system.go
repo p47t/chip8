@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"time"
 
 	tm "github.com/buger/goterm"
+)
+
+const (
+	SystemHz = 500
+	TimerHz  = 60
 )
 
 type System struct {
@@ -33,17 +37,6 @@ func (sys *System) Initialize() {
 
 	sys.delayTimer = 0
 	sys.soundTimer = 0
-
-	go func() {
-		for {
-			select {
-			case <-sys.quit:
-				return
-			case <-time.After(1000 / 60 * time.Millisecond):
-				sys.updateTimer()
-			}
-		}
-	}()
 }
 
 func (sys *System) Terminate() {
@@ -66,7 +59,7 @@ func (sys *System) Cycle() {
 	sys.cpu.Cycle(&sys.mem, &sys.gfx, sys)
 }
 
-func (sys *System) updateTimer() {
+func (sys *System) UpdateTimer() {
 	if sys.delayTimer > 0 {
 		sys.delayTimer--
 	}
