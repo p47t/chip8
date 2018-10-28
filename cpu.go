@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"os"
 )
 
 const (
@@ -355,7 +356,7 @@ func (cpu *CPU) sknpVx(sys *System, x uint8) uint16 {
 }
 
 func (cpu *CPU) unknownOp(opc uint16) {
-	fmt.Errorf("unknown opcode: %x\n", opc)
+	fmt.Fprintf(os.Stderr, "unknown opcode: %x\n", opc)
 	cpu.PC += 2
 }
 
