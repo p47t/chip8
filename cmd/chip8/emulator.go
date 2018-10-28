@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/p47r1ck7541/chip8"
+	"github.com/p47t/chip8"
 )
 
 const (
