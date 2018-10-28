@@ -33,6 +33,9 @@ func (g *Graphics) getPixel(x, y uint8) uint8 {
 }
 
 func (g *Graphics) flip(x, y uint8) {
+	if x >= GfxWidth || y >= GfxHeight {
+		return
+	}
 	g.buffer[uint(x) + uint(y) * 64] ^= 1
 }
 

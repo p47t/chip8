@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 	"unsafe"
 
@@ -55,6 +56,25 @@ void main(void) {
 }
 `
 
+var keyMap = map[glfw.Key]int{
+	glfw.Key1: 0x1,
+	glfw.Key2: 0x2,
+	glfw.Key3: 0x3,
+	glfw.Key4: 0xC,
+	glfw.KeyQ: 0x4,
+	glfw.KeyW: 0x5,
+	glfw.KeyE: 0x6,
+	glfw.KeyR: 0xD,
+	glfw.KeyA: 0x7,
+	glfw.KeyS: 0x8,
+	glfw.KeyD: 0x9,
+	glfw.KeyF: 0xE,
+	glfw.KeyZ: 0xA,
+	glfw.KeyX: 0x0,
+	glfw.KeyC: 0xB,
+	glfw.KeyY: 0xF,
+}
+
 func (emu *Emulator) Initialize(romFile string) {
 	var err error
 	if err = glfw.Init(); err != nil {
@@ -73,77 +93,16 @@ func (emu *Emulator) Initialize(romFile string) {
 	}
 	emu.window.MakeContextCurrent()
 
+	// Key handling
 	emu.window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		switch action {
 		case glfw.Press:
-			switch key {
-			case glfw.Key1:
-				emu.sys.OnKeyDown(0x1)
-			case glfw.Key2:
-				emu.sys.OnKeyDown(0x2)
-			case glfw.Key3:
-				emu.sys.OnKeyDown(0x3)
-			case glfw.Key4:
-				emu.sys.OnKeyDown(0xC)
-			case glfw.KeyQ:
-				emu.sys.OnKeyDown(0x4)
-			case glfw.KeyW:
-				emu.sys.OnKeyDown(0x5)
-			case glfw.KeyE:
-				emu.sys.OnKeyDown(0x6)
-			case glfw.KeyR:
-				emu.sys.OnKeyDown(0xD)
-			case glfw.KeyA:
-				emu.sys.OnKeyDown(0x7)
-			case glfw.KeyS:
-				emu.sys.OnKeyDown(0x8)
-			case glfw.KeyD:
-				emu.sys.OnKeyDown(0x9)
-			case glfw.KeyF:
-				emu.sys.OnKeyDown(0xE)
-			case glfw.KeyZ:
-				emu.sys.OnKeyDown(0xA)
-			case glfw.KeyX:
-				emu.sys.OnKeyDown(0x0)
-			case glfw.KeyC:
-				emu.sys.OnKeyDown(0xB)
-			case glfw.KeyY:
-				emu.sys.OnKeyDown(0xF)
+			if c8Key, ok := keyMap[key]; ok {
+				emu.sys.OnKeyDown(c8Key)
 			}
 		case glfw.Release:
-			switch key {
-			case glfw.Key1:
-				emu.sys.OnKeyUp(0x1)
-			case glfw.Key2:
-				emu.sys.OnKeyUp(0x2)
-			case glfw.Key3:
-				emu.sys.OnKeyUp(0x3)
-			case glfw.Key4:
-				emu.sys.OnKeyUp(0xC)
-			case glfw.KeyQ:
-				emu.sys.OnKeyUp(0x4)
-			case glfw.KeyW:
-				emu.sys.OnKeyUp(0x5)
-			case glfw.KeyE:
-				emu.sys.OnKeyUp(0x6)
-			case glfw.KeyR:
-				emu.sys.OnKeyUp(0xD)
-			case glfw.KeyA:
-				emu.sys.OnKeyUp(0x7)
-			case glfw.KeyS:
-				emu.sys.OnKeyUp(0x8)
-			case glfw.KeyD:
-				emu.sys.OnKeyUp(0x9)
-			case glfw.KeyF:
-				emu.sys.OnKeyUp(0xE)
-			case glfw.KeyZ:
-				emu.sys.OnKeyUp(0xA)
-			case glfw.KeyX:
-				emu.sys.OnKeyUp(0x0)
-			case glfw.KeyC:
-				emu.sys.OnKeyUp(0xB)
-			case glfw.KeyY:
-				emu.sys.OnKeyUp(0xF)
+			if c8Key, ok := keyMap[key]; ok {
+				emu.sys.OnKeyUp(c8Key)
 			}
 		}
 	})
@@ -161,29 +120,16 @@ func (emu *Emulator) Initialize(romFile string) {
 
 	emu.shaderProgram = gl.CreateProgram()
 
-	vs := gl.CreateShader(gl.VERTEX_SHADER)
-	defer gl.DeleteShader(vs)
-	vsCode, vsCodeFree := gl.Strs(vertexShader)
-	defer vsCodeFree()
-	gl.ShaderSource(vs, 1, vsCode, nil)
-	gl.CompileShader(vs)
-	gl.GetShaderiv(vs, gl.COMPILE_STATUS, &status)
-	if status == gl.FALSE {
-		panic(fmt.Errorf("failed to compile vertex shader"))
+	vs, err := compileShader(vertexShader, gl.VERTEX_SHADER)
+	if err != nil {
+		panic(err)
 	}
+	defer gl.DeleteShader(vs)
 	gl.AttachShader(emu.shaderProgram, vs)
 	defer gl.DetachShader(emu.shaderProgram, vs)
 
-	fs := gl.CreateShader(gl.FRAGMENT_SHADER)
+	fs, err := compileShader(fragmentShader, gl.FRAGMENT_SHADER)
 	defer gl.DeleteShader(fs)
-	fsCode, fsCodeFree := gl.Strs(fragmentShader)
-	defer fsCodeFree()
-	gl.ShaderSource(fs, 1, fsCode, nil)
-	gl.CompileShader(fs)
-	gl.GetShaderiv(fs, gl.COMPILE_STATUS, &status)
-	if status == gl.FALSE {
-		panic(fmt.Errorf("failed to compile fragment shader"))
-	}
 	gl.AttachShader(emu.shaderProgram, fs)
 	defer gl.DetachShader(emu.shaderProgram, fs)
 
@@ -220,6 +166,29 @@ func (emu *Emulator) Initialize(romFile string) {
 	// Initialize system
 	emu.sys.Initialize()
 	emu.sys.Load(romFile)
+}
+
+func compileShader(source string, shaderType uint32) (uint32, error) {
+	shader := gl.CreateShader(shaderType)
+
+	csources, free := gl.Strs(source)
+	gl.ShaderSource(shader, 1, csources, nil)
+	free()
+	gl.CompileShader(shader)
+
+	var status int32
+	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
+	if status == gl.FALSE {
+		var logLength int32
+		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
+
+		log := strings.Repeat("\x00", int(logLength+1))
+		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
+
+		return 0, fmt.Errorf("failed to compile %v: %v", source, log)
+	}
+
+	return shader, nil
 }
 
 func (emu *Emulator) UpdateTexture() {
